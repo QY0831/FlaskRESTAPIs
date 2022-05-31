@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 flask = "*"
 flask-restful = "*"
+flask-sqlalchemy = {index = "http://pypi.douban.com/simple/",version = "*"}
 
 [requires]
 python_version = "3.8"
