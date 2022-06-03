@@ -1,6 +1,7 @@
 from flask_restful import Resource, reqparse
 
-user_list = []
+from restdemo import db
+from restdemo.model.user import User as UserModel
 
 
 def min_length_str(min_length):
@@ -25,52 +26,54 @@ class User(Resource):
     )
 
     def get(self, username):
-        for user in user_list:
-            if user['username'] == username:
-                return user
+        user = db.session.query(UserModel).filter(
+            UserModel.username == username).first()
+        if user:
+            return user.as_dict()
         return {'message': 'user not found'}, 404
 
     def post(self, username):
 
-        User.parser.parse_args()  # filter args
-        user = {
-            'username': username,
-            'password': request.get_json().get('password')
-        }
-        user_list.append(user)
-        return user, 201
+        data = User.parser.parse_args()  # filter args
+        user = db.session.query(UserModel).filter(
+            UserModel.username == username
+        ).first()
+        if user:
+            return {'message': 'user already exists'}
+        user = UserModel(
+            username=username,
+            password_hash=data['password']
+        )
+        db.session.add(user)
+        db.session.commit()
+        return user.as_dict(), 201
 
     def delete(self, username):
-        user_find = None
-        for user in user_list:
-            if user['username'] == username:
-                user_find = user
-        if user_find:
-            user_list.remove(user_find)
-            return user_find
+        user = db.session.query(UserModel).filter(
+            UserModel.username == username
+        ).first()
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            return {'message': 'user deleted'}
         else:
-            return {
-                       'message': 'user not found'
-                   }, 204
+            return {'message': 'user not found'}, 204
 
     def put(self, username):
-        user_find = None
-        for user in user_list:
-            if user['username'] == username:
-                user_find = user
-        if user_find:
-            User.parser.parse_args()
-            user_list.remove(user_find)
-            user_find['password'] = request.get_json()['password']
-            user_list.append(user_find)
-            return user_find
+        user = db.session.query(UserModel).filter(
+            UserModel.username == username
+        ).first()
+        if user:
+            data = User.parser.parse_args()
+            user.password_hash = data['password']
+            db.session.commit()
+            return user.as_dict()
         else:
-            return {
-                       'message': 'user not found'
-                   }, 204
+            return {'message': 'user not found'}, 204
 
 
 class UserList(Resource):
 
     def get(self):
-        return user_list
+        users = db.session.query(UserModel).all()
+        return [u.as_dict() for u in users]

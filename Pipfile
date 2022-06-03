@@ -9,6 +9,7 @@ verify_ssl = true
 flask = "*"
 flask-restful = "*"
 flask-sqlalchemy = {index = "http://pypi.douban.com/simple/",version = "*"}
+flask-migrate = "*"
 
 [requires]
 python_version = "3.8"
