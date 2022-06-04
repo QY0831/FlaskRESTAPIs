@@ -1,5 +1,7 @@
+import jwt
+from flask_jwt import jwt_required
 from flask_restful import Resource, reqparse
-
+from flask import request, current_app
 from restdemo import db
 from restdemo.model.user import User as UserModel
 
@@ -25,6 +27,11 @@ class User(Resource):
         help='{error_msg}'
     )
 
+    parser.add_argument(
+        'email', type=str, required=True,
+        help='require email'
+    )
+
     def get(self, username):
         user = db.session.query(UserModel).filter(
             UserModel.username == username).first()
@@ -42,8 +49,9 @@ class User(Resource):
             return {'message': 'user already exists'}
         user = UserModel(
             username=username,
-            password_hash=data['password']
+            email=data['email']
         )
+        user.set_password(data['password'])
         db.session.add(user)
         db.session.commit()
         return user.as_dict(), 201
@@ -74,6 +82,7 @@ class User(Resource):
 
 class UserList(Resource):
 
+    @jwt_required()
     def get(self):
         users = db.session.query(UserModel).all()
         return [u.as_dict() for u in users]
